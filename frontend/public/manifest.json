@@ -1,0 +1,24 @@
+{
+  "name": "NIRIKSHAN 360 — AICTE Complaint Monitor",
+  "short_name": "NIRIKSHAN 360",
+  "description": "Integrated dashboard for monitoring and tracking institution-related complaint cases across AICTE bureaus and cells. SIH 2026 prototype.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1318",
+  "theme_color": "#3dd9b5",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
