@@ -1,4 +1,14 @@
-"""Institutions URL configuration — stub for Phase 1."""
-from django.urls import path
+"""Institution URL routes."""
 
-urlpatterns = []
+from django.urls import path
+from . import views
+
+app_name = "institutions"
+
+urlpatterns = [
+    path("", views.InstitutionListView.as_view(), name="list"),
+    path("<uuid:pk>/", views.InstitutionDetailView.as_view(), name="detail"),
+    path("<uuid:pk>/norm-checks/", views.NormCheckListView.as_view(), name="norm-checks"),
+    path("<uuid:pk>/compliance-radar/", views.ComplianceRadarView.as_view(), name="compliance-radar"),
+    path("<uuid:pk>/replies/", views.InstitutionReplyListView.as_view(), name="replies"),
+]

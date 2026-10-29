@@ -92,6 +92,38 @@ npm run dev      # Starts on http://localhost:5173
 - **Django Admin**: http://localhost:8000/admin/
 - **Demo Login**: `admin / admin` (prototype only)
 
+## Complaint API
+
+All complaint endpoints require a JWT bearer token. Obtain one from
+`POST /api/accounts/login/`, then send `Authorization: Bearer <access-token>`.
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/complaints/create/` | Submit a complaint; the server creates the public `tracking_id`, initial status, routing, and SLA |
+| GET | `/api/complaints/` | Paginated list; supports `status`, `category`, `urgency`, `cell`, `institution`, `state`, `search`, and `needs_review` |
+| GET | `/api/complaints/<uuid-or-tracking-id>/` | Complaint detail and timeline |
+| POST | `/api/complaints/<uuid-or-tracking-id>/status/` | Authorized analyst update, with a required `status` and optional `reason` |
+| GET | `/api/complaints/dashboard/` | Database-backed dashboard aggregates |
+
+Example submission:
+
+```json
+{
+  "title": "Fee refund not processed",
+  "description": "The institution has not returned the fee after cancellation.",
+  "category": "FEE_REFUND",
+  "institution_name": "Example Engineering College",
+  "state": "Maharashtra",
+  "language": "en",
+  "complainant_name": "Optional name",
+  "complainant_contact": "Optional contact"
+}
+```
+
+The response includes a server-generated reference such as `NIR-2026-00001`.
+Category routing is a configurable demonstration rule, not official AICTE policy;
+unmatched categories remain marked for human review.
+
 ---
 
 ## Environment Variables

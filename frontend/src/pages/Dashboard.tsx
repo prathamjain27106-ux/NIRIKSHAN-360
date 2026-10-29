@@ -1,289 +1,93 @@
-import type { CSSProperties } from 'react';
+/* =================================================================
+   Dashboard — Command Centre
+   ================================================================= */
+
+import { useState, useEffect } from 'react';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement,
+  PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { dashboardApi } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
+import type { DashboardMetrics } from '../types';
+import { MetricCard, DemoBanner, LoadingState } from '../components/common';
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale);
 
-// ── Synthetic demo data ──
-const kpis = [
-  { label: 'Total Complaints', value: '1,247', change: '+12%', trend: 'up' as const, color: 'var(--accent)' },
-  { label: 'Pending Triage', value: '38', change: '-8%', trend: 'down' as const, color: 'var(--status-warning)' },
-  { label: 'SLA Breaches', value: '7', change: '+2', trend: 'up' as const, color: 'var(--status-danger)' },
-  { label: 'Resolved (30d)', value: '312', change: '+23%', trend: 'up' as const, color: 'var(--status-success)' },
-  { label: 'Avg Resolution', value: '4.2d', change: '-0.8d', trend: 'down' as const, color: 'var(--status-info)' },
-];
-
-const recentCases = [
-  { id: 'NIR-2026-01234', institution: 'ABC Engineering College', cell: 'PGRC', status: 'Under Review', sla: '2d 14h', slaClass: 'safe' },
-  { id: 'NIR-2026-01233', institution: 'XYZ Institute of Technology', cell: 'Anti-Ragging', status: 'Escalated', sla: '0d 3h', slaClass: 'danger' },
-  { id: 'NIR-2026-01232', institution: 'PQR Medical College', cell: 'ICC', status: 'Pending Triage', sla: '6d 8h', slaClass: 'safe' },
-  { id: 'NIR-2026-01231', institution: 'LMN Pharmacy Institute', cell: 'Scholarship', status: 'Routed', sla: '4d 1h', slaClass: 'warning' },
-  { id: 'NIR-2026-01230', institution: 'DEF Business School', cell: 'RB', status: 'Resolved', sla: '—', slaClass: 'safe' },
-];
-
-const chartColors = {
-  teal: 'hsl(174, 72%, 56%)',
-  blue: 'hsl(210, 70%, 55%)',
-  red: 'hsl(0, 65%, 55%)',
-  purple: 'hsl(280, 60%, 60%)',
-  amber: 'hsl(38, 85%, 55%)',
-  green: 'hsl(152, 60%, 50%)',
+const C = {
+  teal: 'hsl(174,72%,56%)', blue: 'hsl(210,70%,55%)', red: 'hsl(0,65%,55%)',
+  purple: 'hsl(280,60%,60%)', amber: 'hsl(38,85%,55%)', green: 'hsl(152,60%,50%)',
+  text: 'hsl(220,10%,65%)', grid: 'hsl(220,15%,18%)',
 };
 
-const chartTextColor = 'hsl(220, 10%, 65%)';
-const chartGridColor = 'hsl(220, 15%, 18%)';
-
 export function Dashboard() {
+  const { isDemoMode } = useAuth();
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    dashboardApi.metrics()
+      .then(setMetrics)
+      .catch(() => setError('Dashboard data could not be loaded. Please check the backend connection.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="page-content"><LoadingState message="Loading dashboard..." /></div>;
+  if (error || !metrics) return <div className="page-content"><div className="alert alert--danger" role="alert">{error}</div></div>;
+
   return (
     <div className="page-content animate-fade-in">
+      {isDemoMode && <DemoBanner />}
       <h1 className="page-title">Command Centre</h1>
-      <p className="page-subtitle">
-        Real-time overview of complaint operations across all AICTE bureaus and cells
-        <span style={{ marginLeft: '0.75rem', fontSize: 'var(--text-xs)', color: 'var(--status-warning)', fontWeight: 600 }}>
-          ⚠ SYNTHETIC DEMO DATA
-        </span>
-      </p>
+      <p className="page-subtitle">Real-time overview of complaint operations across all AICTE bureaus and cells</p>
 
-      {/* KPI Cards */}
       <div className="kpi-grid stagger-children">
-        {kpis.map((kpi) => (
-          <div
-            className="kpi-card"
-            key={kpi.label}
-            style={{ '--kpi-color': kpi.color } as CSSProperties}
-          >
-            <div className="kpi-card__label">{kpi.label}</div>
-            <div className="kpi-card__value">{kpi.value}</div>
-            <div className={`kpi-card__change kpi-card__change--${kpi.trend === 'up' ? 'up' : 'down'}`}>
-              {kpi.trend === 'up' ? '↑' : '↓'} {kpi.change}
-            </div>
-          </div>
-        ))}
+        <MetricCard label="Total Complaints" value={metrics.total_complaints.toLocaleString()} change="+12%" trend="up" color="var(--accent)" />
+        <MetricCard label="Pending Triage" value={metrics.pending_triage} change="-8%" trend="down" color="var(--status-warning)" />
+        <MetricCard label="SLA Breaches" value={metrics.sla_breaches} change="+2" trend="up" color="var(--status-danger)" />
+        <MetricCard label="Resolved (30d)" value={metrics.resolved_30d} change="+23%" trend="up" color="var(--status-success)" />
+        <MetricCard label="Avg Resolution" value={`${metrics.avg_resolution_days}d`} change="-0.8d" trend="down" color="var(--status-info)" />
       </div>
 
-      {/* Charts */}
       <div className="charts-grid">
-        {/* Complaints by Cell */}
         <div className="chart-container">
           <div className="chart-container__title">Complaints by Cell</div>
-          <Doughnut
-            data={{
-              labels: ['PGRC', 'Anti-Ragging', 'RB', 'ICC', 'Scholarship'],
-              datasets: [{
-                data: [420, 310, 245, 158, 114],
-                backgroundColor: [
-                  chartColors.teal,
-                  chartColors.red,
-                  chartColors.blue,
-                  chartColors.purple,
-                  chartColors.amber,
-                ],
-                borderColor: 'hsl(220, 20%, 13%)',
-                borderWidth: 2,
-              }],
-            }}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {
-                legend: {
-                  position: 'right',
-                  labels: { color: chartTextColor, font: { family: 'Inter', size: 12 }, padding: 12 },
-                },
-              },
-            }}
-          />
+          <Doughnut data={{
+            labels: Object.keys(metrics.complaints_by_cell),
+            datasets: [{ data: Object.values(metrics.complaints_by_cell), backgroundColor: [C.teal, C.red, C.blue, C.purple, C.amber], borderColor: 'hsl(220,20%,13%)', borderWidth: 2 }],
+          }} options={{ responsive: true, plugins: { legend: { position: 'right', labels: { color: C.text, font: { family: 'Inter', size: 12 }, padding: 12 } } } }} />
         </div>
 
-        {/* Monthly Trend */}
         <div className="chart-container">
-          <div className="chart-container__title">Monthly Complaint Trend</div>
-          <Line
-            data={{
-              labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-              datasets: [
-                {
-                  label: 'Received',
-                  data: [185, 210, 195, 240, 220, 197],
-                  borderColor: chartColors.teal,
-                  backgroundColor: 'hsl(174, 72%, 56%, 0.1)',
-                  fill: true,
-                  tension: 0.4,
-                  pointBackgroundColor: chartColors.teal,
-                  pointRadius: 4,
-                  pointHoverRadius: 6,
-                },
-                {
-                  label: 'Resolved',
-                  data: [160, 190, 180, 210, 200, 185],
-                  borderColor: chartColors.green,
-                  backgroundColor: 'hsl(152, 60%, 50%, 0.05)',
-                  fill: true,
-                  tension: 0.4,
-                  pointBackgroundColor: chartColors.green,
-                  pointRadius: 4,
-                  pointHoverRadius: 6,
-                },
-              ],
-            }}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: {
-                x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
-                y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor }, beginAtZero: true },
-              },
-              plugins: {
-                legend: { labels: { color: chartTextColor, font: { family: 'Inter', size: 12 } } },
-              },
-            }}
-          />
+          <div className="chart-container__title">Monthly Trend</div>
+          <Line data={{
+            labels: metrics.monthly_trend.map(m => m.month),
+            datasets: [
+              { label: 'Received', data: metrics.monthly_trend.map(m => m.received), borderColor: C.teal, backgroundColor: 'hsl(174,72%,56%,0.1)', fill: true, tension: 0.4, pointRadius: 4 },
+              { label: 'Resolved', data: metrics.monthly_trend.map(m => m.resolved), borderColor: C.green, backgroundColor: 'hsl(152,60%,50%,0.05)', fill: true, tension: 0.4, pointRadius: 4 },
+            ],
+          }} options={{ responsive: true, scales: { x: { ticks: { color: C.text }, grid: { color: C.grid } }, y: { ticks: { color: C.text }, grid: { color: C.grid }, beginAtZero: true } }, plugins: { legend: { labels: { color: C.text } } } }} />
         </div>
 
-        {/* SLA Performance */}
         <div className="chart-container">
           <div className="chart-container__title">SLA Performance by Cell</div>
-          <Bar
-            data={{
-              labels: ['PGRC', 'Anti-Ragging', 'RB', 'ICC', 'Scholarship'],
-              datasets: [
-                {
-                  label: 'Within SLA',
-                  data: [92, 85, 88, 90, 95],
-                  backgroundColor: chartColors.green,
-                  borderRadius: 4,
-                },
-                {
-                  label: 'Breached',
-                  data: [8, 15, 12, 10, 5],
-                  backgroundColor: chartColors.red,
-                  borderRadius: 4,
-                },
-              ],
-            }}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: {
-                x: { ticks: { color: chartTextColor }, grid: { display: false }, stacked: true },
-                y: { ticks: { color: chartTextColor, callback: (v) => `${v}%` }, grid: { color: chartGridColor }, stacked: true, max: 100 },
-              },
-              plugins: {
-                legend: { labels: { color: chartTextColor, font: { family: 'Inter', size: 12 } } },
-              },
-            }}
-          />
+          <Bar data={{
+            labels: metrics.sla_performance.map(s => s.cell),
+            datasets: [
+              { label: 'Within SLA', data: metrics.sla_performance.map(s => s.within_sla), backgroundColor: C.green, borderRadius: 4 },
+              { label: 'Breached', data: metrics.sla_performance.map(s => s.breached), backgroundColor: C.red, borderRadius: 4 },
+            ],
+          }} options={{ responsive: true, scales: { x: { ticks: { color: C.text }, grid: { display: false }, stacked: true }, y: { ticks: { color: C.text, callback: v => `${v}%` }, grid: { color: C.grid }, stacked: true, max: 100 } }, plugins: { legend: { labels: { color: C.text } } } }} />
         </div>
 
-        {/* Urgency Distribution */}
         <div className="chart-container">
           <div className="chart-container__title">Urgency Distribution</div>
-          <Bar
-            data={{
-              labels: ['Critical', 'High', 'Medium', 'Low'],
-              datasets: [{
-                label: 'Active Cases',
-                data: [18, 67, 145, 82],
-                backgroundColor: [
-                  chartColors.red,
-                  chartColors.amber,
-                  chartColors.blue,
-                  chartColors.green,
-                ],
-                borderRadius: 4,
-              }],
-            }}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              indexAxis: 'y',
-              scales: {
-                x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } },
-                y: { ticks: { color: chartTextColor }, grid: { display: false } },
-              },
-              plugins: {
-                legend: { display: false },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Recent Cases Table */}
-      <div className="card">
-        <div className="card__header">
-          <h2 className="card__title">Recent Cases</h2>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--status-warning)' }}>⚠ Synthetic data</span>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Case ID</th>
-                <th>Institution</th>
-                <th>Cell</th>
-                <th>Status</th>
-                <th>SLA Remaining</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentCases.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <span className="font-mono" style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                      {c.id}
-                    </span>
-                  </td>
-                  <td>{c.institution}</td>
-                  <td>
-                    <span className={`badge badge--cell-${c.cell.toLowerCase().replace('-', '').replace(' ', '')}`}>
-                      {c.cell}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${
-                      c.status === 'Resolved' ? 'badge--status-resolved' :
-                      c.status === 'Escalated' ? 'badge--status-escalated' :
-                      c.status === 'Pending Triage' ? 'badge--status-open' :
-                      'badge--status-progress'
-                    }`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`sla-timer sla-timer--${c.slaClass}`}>
-                      {c.sla !== '—' && <span className="sla-timer__dot" />}
-                      {c.sla}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Bar data={{
+            labels: Object.keys(metrics.complaints_by_urgency),
+            datasets: [{ label: 'Active', data: Object.values(metrics.complaints_by_urgency), backgroundColor: [C.red, C.amber, C.blue, C.green], borderRadius: 4 }],
+          }} options={{ responsive: true, indexAxis: 'y' as const, scales: { x: { ticks: { color: C.text }, grid: { color: C.grid } }, y: { ticks: { color: C.text }, grid: { display: false } } }, plugins: { legend: { display: false } } }} />
         </div>
       </div>
     </div>
