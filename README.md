@@ -9,7 +9,7 @@ SIH 2026 · Problem Statement SIH26264 · Smart Automation
 
 The complete operational flow of NIRIKSHAN 360 is recorded and available here:
 
-- **YouTube Live Demo Link:** [youtu.be](https://youtu.be)
+- **YouTube Live Demo Link:** [youtube.demo-video](https://youtu.be/GnumtX3Im10)
 - **Video Scope:** Covers multi-channel ingest mockups, Explainable Multilingual Triage Engine, relational Norm-Check disclosures, active SLA countdown trackers, and interactive Neo4j Case Graph fallbacks.
 
 ## Overview
