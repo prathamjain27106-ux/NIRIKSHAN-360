@@ -12,6 +12,7 @@ import { dashboardApi } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import type { DashboardMetrics } from '../types';
 import { MetricCard, DemoBanner, LoadingState } from '../components/common';
+import { demoDashboardMetrics } from '../data/demo';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler, RadialLinearScale);
 
@@ -28,11 +29,17 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isDemoMode) {
+      setMetrics(demoDashboardMetrics);
+      setLoading(false);
+      return;
+    }
+
     dashboardApi.metrics()
       .then(setMetrics)
       .catch(() => setError('Dashboard data could not be loaded. Please check the backend connection.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isDemoMode]);
 
   if (loading) return <div className="page-content"><LoadingState message="Loading dashboard..." /></div>;
   if (error || !metrics) return <div className="page-content"><div className="alert alert--danger" role="alert">{error}</div></div>;

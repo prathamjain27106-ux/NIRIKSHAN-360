@@ -21,3 +21,8 @@ declare module '*.svg' {
   const src: string;
   export default src;
 }
+
+declare module '*.jsx' {
+  const component: React.ComponentType;
+  export default component;
+}

@@ -6,6 +6,9 @@ Unit and integration tests for models, views, encryption, and permissions.
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
+from unittest.mock import patch
 from rest_framework.test import APIClient
 from rest_framework import status
 
@@ -373,3 +376,77 @@ class AuditAPITest(TestCase):
         admin_instance = AuditEventAdmin(AuditEvent, None)
         self.assertFalse(admin_instance.has_change_permission(None))
         self.assertFalse(admin_instance.has_delete_permission(None))
+
+
+class DifferentiationRegressionTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.supervisor = User.objects.create_user(username="supervisor", password="test-pass-123", role="BUREAU_HEAD")
+        self.analyst = User.objects.create_user(username="analyst-regression", password="test-pass-123", role="ANALYST")
+        self.institution = Institution.objects.create(
+            name="Vidya Bharati Engineering College",
+            aicte_id="AICTE-MH-2019-001",
+            state="Maharashtra",
+            city="Pune",
+        )
+
+    def _complaint(self, **kwargs):
+        ciphertext, nonce = encrypt_identity("test")
+        complaint = Complaint.objects.create(
+            title=kwargs.pop("title", "Fee dispute"),
+            description=kwargs.pop("description", "Fees charged differ from published disclosure."),
+            category=kwargs.pop("category", "FEE_REFUND"),
+            institution=self.institution,
+            complainant_encrypted=ciphertext,
+            complainant_nonce=nonce,
+            **kwargs,
+        )
+        return complaint
+
+    def test_fee_dispute_disclosure_is_contradicted(self):
+        from institutions.norm_check import execute_norm_check
+
+        results = execute_norm_check(self.institution)
+        fee_result = next(result for result in results if result.norm == "Fee Structure Compliance")
+        self.assertEqual(fee_result.finding, "CONTRADICTED")
+
+    @patch("complaints.graph.Neo4jAdapter.check_connection", return_value=False)
+    def test_graph_connection_failure_uses_postgres_fallback(self, _check_connection):
+        from complaints.graph import get_case_graph
+
+        graph = get_case_graph()
+        self.assertEqual(graph["status"], "POSTGRES_FALLBACK_ACTIVE")
+        self.assertIn("relationships", graph)
+
+    def test_non_privileged_triage_override_is_forbidden(self):
+        complaint = self._complaint()
+        self.client.force_authenticate(user=self.analyst)
+        response = self.client.post(
+            f"/api/complaints/{complaint.pk}/triage-override/",
+            {
+                "field": "category",
+                "value": "APPROVAL_VIOLATION",
+                "justification_explanation": "Not a supervisor action.",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_overdue_complaint_escalates_once_and_is_audited(self):
+        complaint = self._complaint(
+            sla_deadline=timezone.now() - timedelta(minutes=1),
+            status="UNDER_REVIEW",
+        )
+        self.assertTrue(complaint.escalate_if_overdue())
+        complaint.refresh_from_db()
+        self.assertTrue(complaint.is_escalated)
+        self.assertTrue(complaint.overdue_flag)
+        self.assertEqual(complaint.status, Complaint.Status.ESCALATED)
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                action=AuditEvent.Action.ESCALATION,
+                target_id=complaint.tracking_id,
+            ).count(),
+            1,
+        )
+        self.assertFalse(complaint.escalate_if_overdue())

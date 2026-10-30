@@ -14,9 +14,9 @@ from django.conf import settings
 
 def _get_key() -> bytes:
     """Retrieve the AES-256 key from environment.
-    Key should be 32 bytes, base64-encoded in the env var."""
+    Supports either 64-character hex string (32 bytes) or base64 encoded 32 bytes."""
     import sys
-    raw = settings.IDENTITY_ENCRYPTION_KEY
+    raw = getattr(settings, "IDENTITY_ENCRYPTION_KEY", None)
     if not raw:
         # In development/test without a key, use a deterministic dev key
         # This is NOT secure — production MUST set IDENTITY_ENCRYPTION_KEY
@@ -25,14 +25,30 @@ def _get_key() -> bytes:
             return b"NIRIKSHAN360_DEV_KEY_32B_NOTPROD"  # exactly 32 bytes
         raise ValueError(
             "IDENTITY_ENCRYPTION_KEY is not set. "
-            "Set it to a base64-encoded 32-byte key in production."
+            "Set it to a 32-byte hex key or base64-encoded key in production."
         )
 
-    try:
-        key = base64.b64decode(raw)
-    except Exception:
-        # Treat as raw UTF-8 and pad/truncate to 32 bytes
-        key = raw.encode("utf-8")[:32].ljust(32, b"\x00")
+    key = None
+    # 1. Try 64-char hex format (standard from README & .env.example)
+    if len(raw.strip()) == 64:
+        try:
+            key = bytes.fromhex(raw.strip())
+        except ValueError:
+            pass
+
+    # 2. Try base64
+    if key is None:
+        try:
+            b64_key = base64.b64decode(raw.strip())
+            if len(b64_key) == 32:
+                key = b64_key
+        except Exception:
+            pass
+
+    # 3. Fallback to raw utf-8 padded/truncated to 32 bytes
+    if key is None or len(key) != 32:
+        key = raw.strip().encode("utf-8")[:32].ljust(32, b"\x00")
+
     if len(key) != 32:
         raise ValueError(
             f"IDENTITY_ENCRYPTION_KEY must decode to exactly 32 bytes, got {len(key)}."
@@ -46,25 +62,22 @@ def encrypt_identity(plaintext: str) -> tuple[bytes, bytes]:
     if not plaintext:
         return b"", b""
     key = _get_key()
-    nonce = os.urandom(12)  # 96-bit nonce for AES-GCM
     aesgcm = AESGCM(key)
-    ciphertext = aesgcm.encrypt(nonce, plaintext.encode("utf-8"), None)
+    nonce = os.urandom(12)  # 96-bit nonce for AES-GCM
+    data = plaintext.encode("utf-8")
+    ciphertext = aesgcm.encrypt(nonce, data, None)
     return ciphertext, nonce
 
 
 def decrypt_identity(ciphertext: bytes, nonce: bytes) -> str:
-    """Decrypt AES-GCM encrypted identity.
-    Should ONLY be called after dual-approval workflow completes."""
+    """Decrypt ciphertext with AES-GCM.
+    Returns plaintext identity string."""
     if not ciphertext or not nonce:
-        return "[no identity stored]"
+        return ""
     key = _get_key()
     aesgcm = AESGCM(key)
-    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
-    return plaintext.decode("utf-8")
-
-
-def generate_encryption_key() -> str:
-    """Generate a new random AES-256 key, base64-encoded.
-    Utility for setup — run: python -c 'from accounts.crypto import generate_encryption_key; print(generate_encryption_key())'
-    """
-    return base64.b64encode(os.urandom(32)).decode("ascii")
+    try:
+        decrypted = aesgcm.decrypt(nonce, ciphertext, None)
+        return decrypted.decode("utf-8")
+    except Exception as e:
+        raise ValueError(f"Identity decryption failed: {e}")

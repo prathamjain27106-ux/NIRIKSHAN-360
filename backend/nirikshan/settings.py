@@ -53,8 +53,8 @@ INSTALLED_APPS = [
 # Middleware
 # ──────────────────────────────────────────────
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -162,15 +162,6 @@ SIMPLE_JWT = {
 }
 
 # ──────────────────────────────────────────────
-# CORS (allow frontend dev server)
-# ──────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-CORS_ALLOW_CREDENTIALS = True
-
-# ──────────────────────────────────────────────
 # i18n / l10n
 # ──────────────────────────────────────────────
 LANGUAGE_CODE = "en-us"
@@ -185,3 +176,10 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static_collected"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Cross-Origin Resource Sharing configuration settings for local sandbox testing
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_CREDENTIALS = True

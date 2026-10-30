@@ -52,8 +52,10 @@ class NormCheckResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = NormCheckResult
         fields = (
-            "id", "institution", "norm", "category", "status",
-            "detail", "source", "checked_at", "checked_by", "checked_by_name",
+            "id", "institution", "norm", "category", "status", "finding",
+            "detail", "source", "source_url", "verified_at", "excerpt",
+            "field_name", "reported_value", "required_norm",
+            "checked_at", "checked_by", "checked_by_name",
         )
         read_only_fields = fields
 

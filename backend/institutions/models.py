@@ -1,7 +1,7 @@
 """
 NIRIKSHAN 360 — Institution Models
 ====================================
-Institution profiles and norm-check results.
+Institution profiles and norm-check results with stored evidence.
 """
 
 import uuid
@@ -58,13 +58,18 @@ class Institution(models.Model):
 
 
 class NormCheckResult(models.Model):
-    """A single norm-check finding for an institution."""
+    """A single norm-check finding for an institution supported by a stored evidence record."""
 
     class Status(models.TextChoices):
         PASS = "PASS", "Pass"
         FAIL = "FAIL", "Fail"
         INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE", "Insufficient Evidence"
         NOT_APPLICABLE = "NOT_APPLICABLE", "Not Applicable"
+
+    class Finding(models.TextChoices):
+        SUPPORTED = "SUPPORTED", "Supported"
+        CONTRADICTED = "CONTRADICTED", "Contradicted"
+        INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE", "Insufficient Evidence"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     institution = models.ForeignKey(
@@ -73,8 +78,18 @@ class NormCheckResult(models.Model):
     norm = models.CharField(max_length=200, help_text="Name of the norm being checked")
     category = models.CharField(max_length=100)
     status = models.CharField(max_length=25, choices=Status.choices)
+    finding = models.CharField(
+        max_length=25, choices=Finding.choices, default=Finding.INSUFFICIENT_EVIDENCE,
+        help_text="Evidence verdict: SUPPORTED, CONTRADICTED, or INSUFFICIENT_EVIDENCE",
+    )
     detail = models.TextField(help_text="Explanation of finding")
     source = models.CharField(max_length=300, help_text="Regulatory source reference")
+    source_url = models.CharField(max_length=500, blank=True, default="", help_text="Source URL of evidence record")
+    verified_at = models.DateTimeField(null=True, blank=True, help_text="Verification/retrieval timestamp")
+    excerpt = models.TextField(blank=True, default="", help_text="Relevant excerpt from disclosure record")
+    field_name = models.CharField(max_length=150, blank=True, default="")
+    reported_value = models.CharField(max_length=150, blank=True, default="")
+    required_norm = models.CharField(max_length=150, blank=True, default="")
     checked_at = models.DateTimeField(auto_now_add=True)
     checked_by = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
@@ -84,7 +99,7 @@ class NormCheckResult(models.Model):
         ordering = ["-checked_at"]
 
     def __str__(self):
-        return f"{self.institution.name}: {self.norm} — {self.status}"
+        return f"{self.institution.name}: {self.norm} — {self.finding}"
 
 
 class InstitutionReply(models.Model):

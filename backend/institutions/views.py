@@ -15,6 +15,7 @@ from .serializers import (
     NormCheckResultSerializer, InstitutionReplySerializer,
     InstitutionReplyCreateSerializer,
 )
+from .norm_check import execute_norm_check
 
 
 class InstitutionListView(generics.ListAPIView):
@@ -48,15 +49,50 @@ class InstitutionDetailView(generics.RetrieveAPIView):
 
 
 class NormCheckListView(generics.ListAPIView):
-    """GET /api/institutions/<id>/norm-checks/ — norm-check results."""
+    """GET /api/institutions/<id>/norm-checks/ — norm-check results with evidence records."""
     serializer_class = NormCheckResultSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
     def get_queryset(self):
-        return NormCheckResult.objects.filter(
-            institution_id=self.kwargs["pk"]
+        pk = self.kwargs["pk"]
+        qs = NormCheckResult.objects.filter(
+            institution_id=pk
         ).select_related("checked_by")
+        if not qs.exists():
+            try:
+                inst = Institution.objects.get(pk=pk)
+                execute_norm_check(inst, self.request.user)
+                qs = NormCheckResult.objects.filter(institution_id=pk).select_related("checked_by")
+            except Institution.DoesNotExist:
+                pass
+        return qs
+
+
+class RunNormCheckView(views.APIView):
+    """POST /api/institutions/<id>/run-norm-check/ — execute norm-check against disclosure dataset."""
+    permission_classes = [IsAnalystOrAbove]
+
+    def post(self, request, pk):
+        try:
+            inst = Institution.objects.get(pk=pk)
+        except Institution.DoesNotExist:
+            return Response({"error": "Institution not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        results = execute_norm_check(inst, request.user)
+        AuditEvent.log(
+            AuditEvent.Action.NORM_CHECK,
+            request=request,
+            target_type="Institution",
+            target_id=str(inst.aicte_id),
+            detail=f"Norm-check executed for {inst.name}. Status: {inst.norm_check_status}, Score: {inst.compliance_score}",
+        )
+        return Response({
+            "institution_id": str(inst.id),
+            "compliance_score": inst.compliance_score,
+            "norm_check_status": inst.norm_check_status,
+            "results": NormCheckResultSerializer(results, many=True).data,
+        })
 
 
 class ComplianceRadarView(views.APIView):
@@ -70,13 +106,17 @@ class ComplianceRadarView(views.APIView):
             return Response({"error": "Institution not found"}, status=404)
 
         norms = NormCheckResult.objects.filter(institution=inst)
+        if not norms.exists():
+            execute_norm_check(inst, request.user)
+            norms = NormCheckResult.objects.filter(institution=inst)
+
         categories = norms.values_list("category", flat=True).distinct()
 
         dimensions = []
         for cat in categories:
             cat_norms = norms.filter(category=cat)
             total = cat_norms.count()
-            passed = cat_norms.filter(status="PASS").count()
+            passed = cat_norms.filter(finding="SUPPORTED").count()
             score = round((passed / total) * 100) if total > 0 else 0
             dimensions.append({
                 "label": cat,

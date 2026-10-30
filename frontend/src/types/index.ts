@@ -65,16 +65,24 @@ export interface Complaint {
   institution_id: string;
   institution_name: string;
   complainant_encrypted: string;  // AES-GCM encrypted
+  complainant_encrypted_display?: string;
   created_at?: string;
   submitted_at?: string;    // legacy demo-data field
   updated_at: string;
   sla_deadline: string;
+  sla_breached?: boolean;
+  is_overdue?: boolean;
+  sla_hours_remaining?: number | null;
   routing_confidence: number;  // 0–100
   needs_human_review: boolean;
+  triage_method?: string;
+  triage_reasons?: string[];
   assigned_to: string | null;
+  assigned_to_username?: string | null;
   is_duplicate_flagged: boolean;
   duplicate_of: string | null;
   evidence_count: number;
+  evidence_references?: string[];
   timeline: TimelineEvent[];
 }
 
@@ -95,7 +103,33 @@ export interface TimelineEvent {
   action: string;
   actor: string;
   detail: string;
-  type: 'submission' | 'triage' | 'routing' | 'review' | 'escalation' | 'resolution' | 'reply' | 'system';
+  type: 'submission' | 'triage' | 'routing' | 'review' | 'escalation' | 'resolution' | 'reply' | 'system' | 'override' | 'duplicate';
+}
+
+export interface DuplicateCandidate {
+  complaint: Complaint;
+  similarity_score: number;
+  similarity_explanation: string;
+  common_terms: string[];
+  days_apart: number;
+  factors: {
+    institution_similarity: number;
+    category_similarity: number;
+    date_similarity: number;
+    text_similarity: number;
+  };
+}
+
+export interface TriagePreviewResult {
+  category: ComplaintCategory;
+  priority: UrgencyLevel;
+  destination_cell: CellType;
+  confidence_score: number;
+  reasons: string[];
+  triage_method: string;
+  needs_human_review: boolean;
+  confidence_threshold: number;
+  language_detected: string;
 }
 
 // ── Institutions ──
@@ -117,11 +151,19 @@ export interface Institution {
 }
 
 export interface NormCheckResult {
+  id?: string;
   norm: string;
   category: string;
   status: 'PASS' | 'FAIL' | 'INSUFFICIENT_EVIDENCE' | 'NOT_APPLICABLE';
+  finding?: 'SUPPORTED' | 'CONTRADICTED' | 'INSUFFICIENT_EVIDENCE';
   detail: string;
   source: string;
+  source_url?: string;
+  verified_at?: string | null;
+  excerpt?: string;
+  field_name?: string;
+  reported_value?: string;
+  required_norm?: string;
 }
 
 export interface ComplianceRadarData {
@@ -138,8 +180,8 @@ export interface ComplianceRadarData {
 export interface GraphNode {
   id: string;
   label: string;
-  type: 'complaint' | 'institution' | 'person' | 'cell';
-  metadata?: Record<string, string>;
+  type: 'complaint' | 'institution' | 'person' | 'cell' | 'category';
+  metadata?: Record<string, any>;
 }
 
 export interface GraphEdge {
@@ -153,6 +195,7 @@ export interface CaseGraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   fallback: boolean;    // true if using SQL fallback instead of Neo4j
+  engine?: 'neo4j' | 'postgres';
 }
 
 // ── Audit ──
@@ -193,6 +236,26 @@ export interface DashboardMetrics {
   monthly_trend: { month: string; received: number; resolved: number }[];
   state_distribution: Record<string, number>;
   sla_performance: { cell: string; within_sla: number; breached: number }[];
+}
+
+export interface SystemicPulseAnomaly {
+  rule: string;
+  confidence_percentage: number;
+  current_count: number;
+  total_count: number;
+  details: string;
+  action: string;
+}
+
+export interface SystemicPulseAnalysis {
+  rule: string;
+  supporting_counts: { total_cases: number; unreviewed_cases: number };
+  confidence_parameters: {
+    unreviewed_ratio: number;
+    threshold: number;
+    sample_size: number;
+  };
+  anomalies: SystemicPulseAnomaly[];
 }
 
 // ── API Responses ──

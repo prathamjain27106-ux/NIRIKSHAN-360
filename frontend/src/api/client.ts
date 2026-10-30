@@ -11,6 +11,8 @@ import type {
   Complaint,
   ComplaintSubmission,
   ComplaintFilters,
+  DuplicateCandidate,
+  TriagePreviewResult,
   Institution,
   NormCheckResult,
   ComplianceRadarData,
@@ -18,6 +20,7 @@ import type {
   AuditEvent,
   InstitutionReply,
   DashboardMetrics,
+  SystemicPulseAnalysis,
   PaginatedResponse,
 } from '../types';
 
@@ -150,6 +153,49 @@ export const complaintsApi = {
     const { data } = await api.post<Complaint>(`/complaints/${id}/status/`, { status, reason });
     return data;
   },
+  override: async (id: string, field: string, value: string, reason: string): Promise<{ message: string; complaint: Complaint }> => {
+    const { data } = await api.post<{ message: string; complaint: Complaint }>(`/complaints/${id}/override/`, {
+      field,
+      value,
+      reason,
+    });
+    return data;
+  },
+  getDuplicates: async (id: string): Promise<{ complaint: string; candidates: DuplicateCandidate[]; policy: string }> => {
+    const { data } = await api.get<{ complaint: string; candidates: DuplicateCandidate[]; policy: string }>(`/complaints/${id}/duplicates/`);
+    return data;
+  },
+  linkDuplicate: async (id: string, canonicalId: string, reason: string): Promise<any> => {
+    const { data } = await api.post(`/complaints/${id}/link-duplicate/`, {
+      canonical_id: canonicalId,
+      confirm: true,
+      reason,
+    });
+    return data;
+  },
+  dismissDuplicate: async (id: string, candidateId: string, reason: string): Promise<any> => {
+    const { data } = await api.post(`/complaints/${id}/dismiss-duplicate/`, {
+      candidate_id: candidateId,
+      reason,
+    });
+    return data;
+  },
+  triagePreview: async (title: string, description: string, language?: string): Promise<TriagePreviewResult> => {
+    const { data } = await api.post<TriagePreviewResult>('/complaints/triage-preview/', {
+      title,
+      description,
+      language: language || 'en',
+    });
+    return data;
+  },
+  checkEscalations: async (): Promise<{ escalated_count: number; escalated_cases: string[] }> => {
+    const { data } = await api.post<{ escalated_count: number; escalated_cases: string[] }>('/complaints/check-escalations/');
+    return data;
+  },
+  systemicPulse: async (): Promise<SystemicPulseAnalysis> => {
+    const { data } = await api.get<SystemicPulseAnalysis>('/complaints/systemic-pulse/');
+    return data;
+  },
 };
 
 // ── Institution API ──
@@ -176,12 +222,16 @@ export const institutionsApi = {
   },
   normCheck: async (id: string): Promise<NormCheckResult[]> => {
     try {
-      const { data } = await api.get<NormCheckResult[]>(`/institutions/${id}/norm-check/`);
+      const { data } = await api.get<NormCheckResult[]>(`/institutions/${id}/norm-checks/`);
       return data;
     } catch {
       const { demoNormChecks } = await import('../data/demo');
       return demoNormChecks;
     }
+  },
+  runNormCheck: async (id: string): Promise<any> => {
+    const { data } = await api.post(`/institutions/${id}/run-norm-check/`);
+    return data;
   },
   complianceRadar: async (id: string): Promise<ComplianceRadarData> => {
     try {
@@ -205,9 +255,11 @@ export const institutionsApi = {
 
 // ── Case Graph API ──
 export const graphApi = {
-  get: async (complaintId?: string): Promise<CaseGraphData> => {
+  get: async (complaintId?: string, institutionId?: string): Promise<CaseGraphData> => {
     try {
-      const { data } = await api.get<CaseGraphData>('/complaints/graph/', { params: { complaint_id: complaintId } });
+      const { data } = await api.get<CaseGraphData>('/complaints/graph/', {
+        params: { complaint_id: complaintId, institution_id: institutionId },
+      });
       return data;
     } catch {
       const { demoCaseGraph } = await import('../data/demo');
