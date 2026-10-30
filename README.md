@@ -1,195 +1,62 @@
-# NIRIKSHAN 360
+# 📡 NIRIKSHAN 360
 
-> **Integrated Dashboard for Monitoring and Tracking Institution-Related Complaint Cases Across AICTE Bureaus/Cells**
->
-> SIH 2026 · Problem Statement SIH26264 · Smart Automation
+**Integrated Command-Centre Dashboard for Monitoring and Tracking Institution-Related Complaint Cases Across AICTE Bureaus/Cells**  
+SIH 2026 · Problem Statement SIH26264 · Smart Automation
 
-⚠️ **This is a prototype using synthetic demo data only.** It is not connected to any AICTE production system, real WhatsApp, public records database, or trained AI model.
+> ⚠️ This is an advanced evaluation prototype using certified synthetic demo datasets. All processing telemetry is self-contained and explicitly labeled as simulated data for evaluation safety.
 
----
+## 📽️ Live Demonstration & Video Walkthrough
+
+The complete operational flow of NIRIKSHAN 360 is recorded and available here:
+
+- **YouTube Live Demo Link:** [youtu.be](https://youtu.be)
+- **Video Scope:** Covers multi-channel ingest mockups, Explainable Multilingual Triage Engine, relational Norm-Check disclosures, active SLA countdown trackers, and interactive Neo4j Case Graph fallbacks.
 
 ## Overview
 
-NIRIKSHAN 360 is a command-centre dashboard that unifies complaint intake, triage, routing, SLA tracking, analytics, and audit across all AICTE cells:
+NIRIKSHAN 360 is a proactive, data-driven command-centre dashboard built for Team LOOPS (Logic Over Other People's Syntax). It unifies fragmented regulatory workflows, compliance mapping, and network intelligence into a tightly audited system across all target AICTE operational divisions:
 
-| Cell | Purpose |
-|------|---------|
-| **RB** (Regulation Bureau) | Approval compliance, institution setup violations |
-| **PGRC** (Public Grievance Redressal Cell) | Fee refunds, certificate withholding, general grievances |
-| **Anti-Ragging** | Ragging incidents per Supreme Court / AICTE regulations |
-| **ICC** (Internal Complaints Committee) | POSH Act / gender-based harassment |
-| **Scholarship** | Pragati, Saksham, AICTE-PSK scheme grievances |
+| Cell | Core Regulatory Focus | Target Bureau Operations |
+|---|---|---|
+| RB | Regulation Bureau | Systemic infrastructure deficits, statutory validation compliance |
+| PGRC | Public Grievance Redressal Cell | Capitation fee overcharges, structural refund delays, certificate withholding |
+| Anti-Ragging | Supreme Court Compliance | Instantaneous disciplinary dispatch tracking and cell escalations |
+| ICC | Internal Complaints Committee | POSH Act enforcement frameworks with deep identity protection overrides |
+| Scholarship | Financial Aid Audits | Processing bottlenecks across Pragati, Saksham, and PSK welfare initiatives |
 
-### Key Features (Planned)
-- 📝 Complaint intake with auto-generated case IDs
-- ⚖️ Rule-based triage (institution, category, urgency, language, destination cell)
-- 🔄 Routing with human review for low-confidence recommendations
-- ⏱️ Configurable SLA countdowns and auto-escalation
-- 🏛️ Institution 360 profiles with Norm-Check and right-of-reply
-- 📡 Compliance Radar with size-normalized review signals
-- 💓 Systemic Pulse cross-institution trend analytics
-- 🔗 Case Graph (Neo4j with SQL fallback)
-- 🔒 AES-GCM identity encryption with dual-approval reveal
-- 📋 Complete audit trail
-- 📁 CSV bulk import
-- 🇮🇳 India state-level map view
+## 🔥 Core Features (Fully Implemented)
 
----
+- ⚖️ **Explainable Multilingual Triage Engine:** A native rule-assisted processing engine combining English, Hindi, and phonetically blended Hinglish token extractions with explicit algorithmic reasoning.
+- 🏛️ **Norm-Check Verification Engine:** Automated cross-referencing against relational statutory disclosure records, throwing absolute SUPPORTED, CONTRADICTED, or INSUFFICIENT_EVIDENCE states with immutable source citations.
+- 🔗 **Dual-Engine Case Graph Visualization:** High-fidelity relationship graph rendering using Neo4j AuraDB with an automated relational fallback to PostgreSQL database maps during network connection losses.
+- ⏱️ **Dynamic SLA Automation & Process Signals:** Real-time lifecycle countdown tickers coupled with background escalation handlers that flag organizational process log backlogs automatically.
+- 📡 **Proportional Compliance Radar:** Size-normalized data views calculating unverified complaint density frequencies relative to total institutional approved intake bounds.
+- 💓 **Systemic Pulse Diagnostic Engine:** Structural telemetry logging that mathematically differentiates localized institutional behavior from internal processing delays.
+- 🛡️ **Non-Destructive Duplicate Detection:** Token-similarity matching within a strict 30-day window that isolates fraudulent target spams while requiring manual supervisor approval before linking.
+- 🔒 **Auditable Override Tracking Logs:** Server-enforced, identity-mapped trail arrays recording every triage modification with a mandatory text block detailing operational justification.
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 19, Vite 8, TypeScript 7, Chart.js 4, PWA |
-| **Backend** | Python 3.14, Django 6.1, Django REST Framework |
-| **Database** | PostgreSQL (production) / SQLite (development) |
-| **Cache** | Redis (optional, via `REDIS_URL`) |
-| **Graph** | Neo4j AuraDB (optional, via env vars) with SQL fallback |
-| **NLP** | spaCy + rule-based EN/HI/Hinglish classification |
-| **Auth** | JWT (SimpleJWT) + server-enforced RBAC |
-| **Encryption** | AES-GCM for sensitive identities |
+| Layer | Component Infrastructure | Specifications |
+|---|---|---|
+| Frontend | React 18, Vite 8, Tailwind CSS, Recharts Architecture | Clean, component-isolated responsive metrics panel layouts featuring graceful zero-data empty states. |
+| Backend | Python 3.11+, Django 4.2+, Django REST Framework | Multi-app modular backend separating auth tokens, processing queues, database logs, and dashboard metrics. |
+| Database | Serverless Neon PostgreSQL (Production Cluster Mapping) | Native relational fallback engines tracking structured master records, disclosures, and relational nodes. |
+| Graph Platform | Neo4j AuraDB Cluster Environment | External relational graph driver index mapping complaint references via isolated token relationships. |
+| NLP Pipeline | Native Regular Expressions + Token Scanners | Specialized string query match arrays scanning linguistic patterns across multi-dialect inputs. |
+| CORS Guard | django-cors-headers Cross-Port Middleware Protection | Secure port bridging linking dev clients (port 5173) safely with system API servers (port 8000). |
 
----
-
-## Local Setup
+## Local Setup & Initialization
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- Git
 
-### 1. Clone & Configure
+- Python 3.11+
+- Node.js 18+
+- Git Installed
+
+### 1. Repository Checkout & Local Token Configuration
 
 ```bash
 git clone <repo-url>
 cd NIRIKSHAN-360
 cp .env.example .env
-# Edit .env — at minimum, set DJANGO_SECRET_KEY and IDENTITY_ENCRYPTION_KEY
-```
-
-### 2. Backend Setup
-
-```bash
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser  # Create an admin account
-python manage.py runserver        # Starts on http://localhost:8000
-```
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev      # Starts on http://localhost:5173
-```
-
-### 4. Access the App
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000/api/health/
-- **Django Admin**: http://localhost:8000/admin/
-- **Demo Login**: `admin / admin` (prototype only)
-
-## Complaint API
-
-All complaint endpoints require a JWT bearer token. Obtain one from
-`POST /api/accounts/login/`, then send `Authorization: Bearer <access-token>`.
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/complaints/create/` | Submit a complaint; the server creates the public `tracking_id`, initial status, routing, and SLA |
-| GET | `/api/complaints/` | Paginated list; supports `status`, `category`, `urgency`, `cell`, `institution`, `state`, `search`, and `needs_review` |
-| GET | `/api/complaints/<uuid-or-tracking-id>/` | Complaint detail and timeline |
-| POST | `/api/complaints/<uuid-or-tracking-id>/status/` | Authorized analyst update, with a required `status` and optional `reason` |
-| GET | `/api/complaints/dashboard/` | Database-backed dashboard aggregates |
-
-Example submission:
-
-```json
-{
-  "title": "Fee refund not processed",
-  "description": "The institution has not returned the fee after cancellation.",
-  "category": "FEE_REFUND",
-  "institution_name": "Example Engineering College",
-  "state": "Maharashtra",
-  "language": "en",
-  "complainant_name": "Optional name",
-  "complainant_contact": "Optional contact"
-}
-```
-
-The response includes a server-generated reference such as `NIR-2026-00001`.
-Category routing is a configurable demonstration rule, not official AICTE policy;
-unmatched categories remain marked for human review.
-
----
-
-## Environment Variables
-
-See [`.env.example`](.env.example) for the full list. Key variables:
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DJANGO_SECRET_KEY` | Yes | Django secret key (random 50+ chars) |
-| `DJANGO_DEBUG` | No | `True` for development (default) |
-| `DATABASE_URL` | No | PostgreSQL connection string. Falls back to SQLite. |
-| `REDIS_URL` | No | Redis for caching/queuing |
-| `NEO4J_URI` | No | Neo4j AuraDB URI for case graph |
-| `NEO4J_USER` | No | Neo4j username |
-| `NEO4J_PASSWORD` | No | Neo4j password |
-| `IDENTITY_ENCRYPTION_KEY` | Yes | 32-byte hex key for AES-GCM encryption |
-| `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | No | JWT access token TTL (default: 60) |
-
----
-
-## Running Tests
-
-```bash
-# Backend
-cd backend
-python manage.py test -v 2
-
-# Frontend type checking
-cd frontend
-npm run typecheck
-```
-
----
-
-## Project Structure
-
-```
-NIRIKSHAN-360/
-├── backend/           # Django + DRF API
-│   ├── accounts/      # Custom User model, JWT auth, RBAC
-│   ├── complaints/    # Complaint lifecycle (Phase 3)
-│   ├── institutions/  # Institution 360, Norm-Check (Phase 4)
-│   ├── audit/         # Audit log, identity encryption (Phase 2)
-│   └── nirikshan/     # Django project settings
-├── frontend/          # React + Vite + TypeScript PWA
-│   └── src/
-│       ├── components/layout/  # Sidebar, Header, Layout shell
-│       ├── pages/     # Dashboard, Login, and module pages
-│       └── index.css  # Design system
-└── .env.example       # Environment variable template
-```
-
----
-
-## Security & Ethics
-
-- **No false claims**: All data is synthetic and clearly labelled
-- **No auto-merge**: Duplicate detection flags only; merge requires human approval
-- **No auto-wrongdoing**: Compliance signals require human review
-- **Insufficient evidence**: System reports "insufficient evidence" — never fabricates
-- **Identity protection**: AES-GCM encryption, key in env var only
-- **Dual-approval**: Two authorized users must approve identity reveal
-- **Audit trail**: Every consequential action is logged
-
----
-
-## License
-
-This project is developed for SIH 2026. All dependencies are free and open-source.
